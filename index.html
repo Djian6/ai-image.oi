@@ -565,16 +565,9 @@
     </div>
 
     <script>
-        // 检测是否在本地运行
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const API_URL = isLocal ? 'http://localhost:3000' : '';
-
-        // 页面加载时检查环境
-        if (!isLocal) {
-            document.addEventListener('DOMContentLoaded', () => {
-                showStatus('提示：GitHub Pages 上无法直接运行，需要本地代理服务器。请克隆项目后在本地运行。', 'warning');
-            });
-        }
+        // 直接使用 API 地址
+        const API_URL = 'https://api.aizdzj.com/draw/text2image.php';
+        const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
         // Influence slider
         const influenceSlider = document.getElementById('influence');
@@ -617,11 +610,6 @@
 
         // Generate image
         document.getElementById('generate-btn').addEventListener('click', async () => {
-            if (!isLocal) {
-                showStatus('请克隆项目到本地并启动代理服务器后使用', 'error');
-                return;
-            }
-
             let prompt = document.getElementById('prompt').value.trim();
             if (!prompt) {
                 showStatus('请输入提示词', 'error');
@@ -649,15 +637,7 @@
                 formData.append('model', model);
                 formData.append('influence', influence);
 
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                    },
-                    body: formData.toString()
-                });
-
-                const data = await response.json();
+                const data = await makeAPIRequest(formData.toString());
                 console.log('API Response:', data);
 
                 if (data.task_id) {
@@ -666,6 +646,7 @@
                 } else if (data.image_url || data.data?.image_url) {
                     const imageUrl = data.image_url || data.data?.image_url;
                     showImageResult(imageUrl, data.task_id);
+                    addToHistory(imageUrl, prompt);
                 } else {
                     showStatus('生成失败: ' + JSON.stringify(data), 'error');
                     resetUI();
@@ -675,6 +656,36 @@
                 resetUI();
             }
         });
+
+        // 发送 API 请求的辅助函数
+        async function makeAPIRequest(bodyString) {
+            // 尝试直接调用
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    },
+                    body: bodyString
+                });
+                const data = await response.json();
+                if (!data.error || data.code !== 403) {
+                    return data;
+                }
+            } catch (e) {
+                console.log('直接调用失败，尝试 CORS 代理');
+            }
+
+            // 尝试使用 CORS 代理（GET 方式）
+            try {
+                const proxyUrl = CORS_PROXY + encodeURIComponent(API_URL + '?' + bodyString);
+                const response = await fetch(proxyUrl);
+                return await response.json();
+            } catch (e) {
+                console.log('CORS 代理也失败了');
+                throw new Error('无法连接到 API，请尝试使用本地代理服务器');
+            }
+        }
 
         // Poll task status
         async function pollTaskStatus(taskId, prompt, maxRetries = 60, interval = 3000) {
@@ -693,15 +704,7 @@
                     const formData = new URLSearchParams();
                     formData.append('task_id', taskId);
 
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                        },
-                        body: formData.toString()
-                    });
-
-                    const data = await response.json();
+                    const data = await makeAPIRequest(formData.toString());
                     console.log('Poll Response:', data);
 
                     const isCompleted = data.task_status === 'COMPLETED' || data.task_status === 'SUCCEEDED' || data.status === 'completed' || data.status === 'success' || (data.data && (data.data.status === 'completed' || data.data.status === 'COMPLETED' || data.data.status === 'SUCCEEDED'));
