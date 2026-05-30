@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 图像生成器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a2e;
+            --bg-card-hover: #22223a;
+            --accent: #00f0ff;
+            --accent-glow: rgba(0, 240, 255, 0.3);
+            --accent-secondary: #7b2ff7;
+            --text-primary: #e8e8f0;
+            --text-secondary: #8888a0;
+            --border: rgba(255, 255, 255, 0.08);
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --error: #ff4466;
+            --gradient-main: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 60px 60px;
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(150px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-glow--1 {
+            top: -200px;
+            right: -100px;
+            background: var(--accent);
+        }
+
+        .bg-glow--2 {
+            bottom: -200px;
+            left: -100px;
+            background: var(--accent-secondary);
+        }
+
+        .app {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 42px;
+            font-weight: 900;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+        }
+
+        .tagline {
+            color: var(--text-secondary);
+            font-size: 15px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 32px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .panel__title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel__title::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            border-radius: 2px;
+            background: var(--gradient-main);
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .form-group textarea,
+        .form-group select,
+        .form-group input[type="text"],
+        .form-group input[type="number"] {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+            line-height: 1.6;
+        }
+
+        .form-group textarea:focus,
+        .form-group select:focus,
+        .form-group input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .form-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238888a0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .form-row--triple {
+            grid-template-columns: 1fr 1fr 1.2fr;
+            align-items: end;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider-group input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-secondary);
+            outline: none;
+        }
+
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        .slider-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 13px;
+            color: var(--accent);
+            min-width: 36px;
+            text-align: right;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.25s, opacity 0.2s;
+            letter-spacing: 1px;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn--primary {
+            background: var(--gradient-main);
+            color: #0a0a0f;
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .btn--primary:hover {
+            box-shadow: 0 6px 30px var(--accent-glow);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result-area {
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .result-placeholder {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 350px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .result-placeholder__icon {
+            width: 80px;
+            height: 80px;
+            border: 2px dashed var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .result-placeholder__icon svg {
+            width: 32px;
+            height: 32px;
+            stroke: var(--text-secondary);
+        }
+
+        .result-placeholder__text {
+            font-size: 14px;
+        }
+
+        .result-image-wrapper {
+            position: relative;
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .result-image-wrapper img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .result-actions .btn {
+            width: auto;
+            flex: 1;
+            padding: 12px;
+            font-size: 13px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .result-actions .btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent);
+        }
+
+        /* Loading */
+        .loader {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 350px;
+            gap: 24px;
+        }
+
+        .loader.active {
+            display: flex;
+        }
+
+        .loader__ring {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loader__text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .loader__progress {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            color: var(--accent);
+            letter-spacing: 2px;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .status-bar--info {
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            color: var(--accent);
+        }
+
+        .status-bar--success {
+            background: rgba(0, 255, 136, 0.08);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            color: var(--success);
+        }
+
+        .status-bar--error {
+            background: rgba(255, 68, 102, 0.08);
+            border: 1px solid rgba(255, 68, 102, 0.2);
+            color: var(--error);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .history-section {
+            margin-top: 40px;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .history-item {
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+            aspect-ratio: 1;
+        }
+
+        .history-item:hover {
+            transform: scale(1.03);
+            border-color: var(--accent);
+        }
+
+        .history-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .task-id-input {
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow--1"></div>
+    <div class="bg-glow bg-glow--2"></div>
+
+    <div class="app">
+        <header>
+            <div class="logo">AI DRAW</div>
+            <p class="tagline">免费 AI 图像生成工具 · 基于 FLUX.1-Dev</p>
+        </header>
+
+        <div class="layout">
+            <!-- Left: Controls -->
+            <div class="panel">
+                <div class="panel__title">生成参数</div>
+
+                <div class="form-group">
+                    <label>提示词 (Prompt)</label>
+                    <textarea id="prompt" placeholder="描述你想要生成的图像"></textarea>
+                </div>
+
+                <div class="form-row form-row--triple">
+                    <div class="form-group" style="margin-bottom:0">
+                        <select id="size">
+                            <option value="1024*1024">1024 × 1024</option>
+                            <option value="1024*768">1024 × 768</option>
+                            <option value="768*1024">768 × 1024</option>
+                            <option value="1024*576">1024 × 576</option>
+                            <option value="576*1024">576 × 1024</option>
+                            <option value="512*512">512 × 512</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <select id="model-select">
+                            <option value="flux-dev">FLUX</option>
+                            <option value="Qwen Image Plus">Qwen</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <div class="slider-group">
+                            <input type="range" id="influence" min="0" max="100" value="100" style="height:4px">
+                            <span class="slider-value" id="influence-value">100</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn--primary" id="generate-btn" style="margin-top:14px">
+                    生成图像
+                </button>
+
+                <button class="btn" id="history-toggle-btn" style="margin-top:8px">
+                    生成历史
+                </button>
+            </div>
+
+            <!-- Right: Result -->
+            <div class="panel result-area">
+                <div id="status-container"></div>
+
+                <div class="loader" id="loader">
+                    <div class="loader__ring"></div>
+                    <div class="loader__progress" id="loader-timer">00:00</div>
+                    <div class="loader__text">AI 正在生成图像，请稍候...</div>
+                </div>
+
+                <div class="result-placeholder" id="placeholder">
+                    <div class="result-placeholder__icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                    </div>
+                    <p class="result-placeholder__text">输入提示词后点击「生成图像」<br>AI 将为你创作独特的图像</p>
+                </div>
+
+                <div id="result-container" style="display: none;">
+                    <div class="result-image-wrapper">
+                        <img id="result-image" src="" alt="生成的图像">
+                    </div>
+                    <div class="result-actions">
+                        <button class="btn" id="download-btn">下载图像</button>
+                        <button class="btn" id="new-tab-btn">新标签打开</button>
+                        <button class="btn" id="copy-url-btn">复制图像链接</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="history-section" id="history-section" style="display: none;">
+            <div class="panel">
+                <div class="panel__title">生成历史</div>
+                <div class="history-grid" id="history-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        // Influence slider
+        const influenceSlider = document.getElementById('influence');
+        const influenceValue = document.getElementById('influence-value');
+        influenceSlider.addEventListener('input', () => {
+            influenceValue.textContent = influenceSlider.value;
+        });
+
+        // Status bar
+        function showStatus(message, type = 'info') {
+            const container = document.getElementById('status-container');
+            container.innerHTML = `
+                <div class="status-bar status-bar--${type}">
+                    <span class="status-dot"></span>
+                    <span>${message}</span>
+                </div>`;
+        }
+
+        function clearStatus() {
+            document.getElementById('status-container').innerHTML = '';
+        }
+
+        // Loader timer
+        let timerInterval = null;
+        function startTimer() {
+            const timerEl = document.getElementById('loader-timer');
+            let seconds = 0;
+            timerInterval = setInterval(() => {
+                seconds++;
+                const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+                const s = String(seconds % 60).padStart(2, '0');
+                timerEl.textContent = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        // Generate image
+        document.getElementById('generate-btn').addEventListener('click', async () => {
+            let prompt = document.getElementById('prompt').value.trim();
+            if (!prompt) {
+                showStatus('请输入提示词', 'error');
+                return;
+            }
+
+            const size = document.getElementById('size').value;
+            const model = document.getElementById('model-select').value;
+            const influence = document.getElementById('influence').value;
+
+            const btn = document.getElementById('generate-btn');
+            btn.disabled = true;
+
+            document.getElementById('placeholder').style.display = 'none';
+            document.getElementById('result-container').style.display = 'none';
+            document.getElementById('loader').classList.add('active');
+            clearStatus();
+            showStatus('正在提交生成任务...', 'info');
+            startTimer();
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append('prompt', prompt);
+                formData.append('size', size);
+                formData.append('model', model);
+                formData.append('influence', influence);
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    },
+                    body: formData.toString()
+                });
+
+                const data = await response.json();
+                console.log('API Response:', data);
+
+                if (data.task_id) {
+                    showStatus(`任务已提交，正在生成中... (Task ID: ${data.task_id})`, 'info');
+                    await pollTaskStatus(data.task_id, prompt);
+                } else if (data.image_url || data.data?.image_url) {
+                    const imageUrl = data.image_url || data.data?.image_url;
+                    showImageResult(imageUrl, data.task_id);
+                } else {
+                    showStatus('生成失败: ' + JSON.stringify(data), 'error');
+                    resetUI();
+                }
+            } catch (error) {
+                showStatus('请求失败: ' + error.message, 'error');
+                resetUI();
+            }
+        });
+
+        // Poll task status
+        async function pollTaskStatus(taskId, prompt, maxRetries = 60, interval = 3000) {
+            let retries = 0;
+
+            const poll = async () => {
+                if (retries >= maxRetries) {
+                    showStatus('生成超时，请手动查询任务 ID: ' + taskId, 'error');
+                    resetUI();
+                    return;
+                }
+
+                try {
+                    showStatus(`正在生成中... (第 ${retries + 1} 次查询)`, 'info');
+
+                    const formData = new URLSearchParams();
+                    formData.append('task_id', taskId);
+
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        },
+                        body: formData.toString()
+                    });
+
+                    const data = await response.json();
+                    console.log('Poll Response:', data);
+
+                    const isCompleted = data.task_status === 'COMPLETED' || data.task_status === 'SUCCEEDED' || data.status === 'completed' || data.status === 'success' || (data.data && (data.data.status === 'completed' || data.data.status === 'COMPLETED' || data.data.status === 'SUCCEEDED'));
+
+                    if (isCompleted) {
+                        const imageUrl = data.url || data.image_url || data.data?.image_url || data.result?.data?.[0]?.url || data.data?.result || data.result;
+                        if (imageUrl) {
+                            stopTimer();
+                            showImageResult(imageUrl, taskId);
+                            addToHistory(imageUrl, prompt);
+                            return;
+                        }
+                    }
+
+                    const isFailed = data.task_status === 'FAILED' || data.status === 'failed' || data.status === 'error';
+
+                    if (isFailed) {
+                        showStatus('生成失败: ' + (data.error || data.message || data.error_details?.join(', ') || JSON.stringify(data)), 'error');
+                        stopTimer();
+                        resetUI();
+                        return;
+                    }
+
+                    retries++;
+                    setTimeout(poll, interval);
+                } catch (error) {
+                    retries++;
+                    setTimeout(poll, interval);
+                }
+            };
+
+            poll();
+        }
+
+        function showImageResult(imageUrl, taskId) {
+            document.getElementById('loader').classList.add('active');
+            document.getElementById('loader').classList.remove('active');
+            document.getElementById('result-container').style.display = 'block';
+            document.getElementById('result-image').src = imageUrl;
+            clearStatus();
+            showStatus('图像生成完成!' + (taskId ? ` (Task ID: ${taskId})` : ''), 'success');
+            document.getElementById('generate-btn').disabled = false;
+        }
+
+        function resetUI() {
+            document.getElementById('loader').classList.remove('active');
+            document.getElementById('placeholder').style.display = 'flex';
+            stopTimer();
+            document.getElementById('generate-btn').disabled = false;
+        }
+
+        // Download image
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const imgSrc = document.getElementById('result-image').src;
+            if (imgSrc) {
+                const a = document.createElement('a');
+                a.href = imgSrc;
+                a.download = `ai-image-${Date.now()}.png`;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        });
+
+        // Open in new tab
+        document.getElementById('new-tab-btn').addEventListener('click', () => {
+            const imgSrc = document.getElementById('result-image').src;
+            if (imgSrc) window.open(imgSrc, '_blank');
+        });
+
+        // Copy URL
+        document.getElementById('copy-url-btn').addEventListener('click', () => {
+            const imgSrc = document.getElementById('result-image').src;
+            if (imgSrc) {
+                navigator.clipboard.writeText(imgSrc).then(() => {
+                    showStatus('链接已复制到剪贴板', 'success');
+                    setTimeout(clearStatus, 3000);
+                });
+            }
+        });
+
+        // History toggle
+        document.getElementById('history-toggle-btn').addEventListener('click', () => {
+            const section = document.getElementById('history-section');
+            if (section.style.display === 'none' || section.style.display === '') {
+                renderHistory();
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        });
+
+        // History
+        let history = JSON.parse(localStorage.getItem('ai-draw-history') || '[]');
+
+        function renderHistory() {
+            const section = document.getElementById('history-section');
+            const grid = document.getElementById('history-grid');
+
+            grid.innerHTML = '';
+
+            if (history.length === 0) {
+                grid.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;grid-column:1/-1;text-align:center;padding:20px;">暂无生成记录</div>';
+                return;
+            }
+
+            history.slice().reverse().forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `<img src="${item.url}" alt="${item.prompt}" title="${item.prompt}">`;
+                div.addEventListener('click', () => {
+                    document.getElementById('placeholder').style.display = 'none';
+                    document.getElementById('result-container').style.display = 'block';
+                    document.getElementById('result-image').src = item.url;
+                    clearStatus();
+                    showStatus('从历史记录加载', 'info');
+                    setTimeout(clearStatus, 2000);
+                });
+                grid.appendChild(div);
+            });
+        }
+
+        function addToHistory(url, prompt) {
+            history.push({ url, prompt, time: Date.now() });
+            if (history.length > 20) history = history.slice(-20);
+            localStorage.setItem('ai-draw-history', JSON.stringify(history));
+        }
+    </script>
+</body>
+</html>
