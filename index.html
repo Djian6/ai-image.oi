@@ -116,12 +116,6 @@
             align-items: start;
         }
 
-        @media (max-width: 900px) {
-            .layout {
-                grid-template-columns: 1fr;
-            }
-        }
-
         .panel {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -164,20 +158,20 @@
         .form-group input[type="text"],
         .form-group input[type="number"] {
             width: 100%;
-            padding: 8px 10px;
+            padding: 12px 14px;
             border-radius: 8px;
             border: 1px solid var(--border);
             background: var(--bg-secondary);
             color: var(--text-primary);
             font-family: inherit;
-            font-size: 13px;
+            font-size: 16px;
             transition: border-color 0.2s, box-shadow 0.2s;
             outline: none;
         }
 
         .form-group textarea {
             resize: vertical;
-            min-height: 80px;
+            min-height: 100px;
             line-height: 1.6;
         }
 
@@ -193,8 +187,8 @@
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238888a0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 10px center;
-            padding-right: 30px;
+            background-position: right 14px center;
+            padding-right: 36px;
         }
 
         .form-row {
@@ -208,6 +202,105 @@
             align-items: end;
         }
 
+        /* 移动端适配 */
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .app {
+                padding: 24px 16px 60px;
+            }
+
+            header {
+                margin-bottom: 32px;
+            }
+
+            .logo {
+                font-size: 32px;
+                letter-spacing: 2px;
+            }
+
+            .tagline {
+                font-size: 13px;
+                letter-spacing: 1px;
+            }
+
+            .panel {
+                padding: 20px 16px;
+                border-radius: 12px;
+            }
+
+            .panel__title {
+                font-size: 15px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row--triple {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .bg-grid {
+                background-size: 40px 40px;
+            }
+
+            .bg-glow {
+                width: 400px;
+                height: 400px;
+                filter: blur(100px);
+            }
+
+            /* 移动端按钮优化 */
+            .btn {
+                padding: 16px 20px;
+                font-size: 16px;
+                min-height: 48px;
+            }
+
+            /* 移动端滑块优化 */
+            .slider-group input[type="range"]::-webkit-slider-thumb {
+                width: 28px;
+                height: 28px;
+            }
+
+            /* 移动端历史记录 */
+            .history-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 10px;
+            }
+
+            /* 移动端结果区域 */
+            .result-area {
+                min-height: 300px;
+            }
+
+            .result-placeholder {
+                min-height: 280px;
+            }
+
+            /* 移动端加载器 */
+            .loader {
+                min-height: 280px;
+            }
+
+            /* 移动端结果操作按钮 */
+            .result-actions {
+                flex-direction: column;
+            }
+
+            .result-actions .btn {
+                width: 100%;
+                padding: 14px;
+                font-size: 14px;
+            }
+        }
+
         .slider-group {
             display: flex;
             align-items: center;
@@ -218,16 +311,16 @@
             flex: 1;
             -webkit-appearance: none;
             appearance: none;
-            height: 6px;
-            border-radius: 3px;
+            height: 8px;
+            border-radius: 4px;
             background: var(--bg-secondary);
             outline: none;
         }
 
         .slider-group input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             background: var(--accent);
             cursor: pointer;
