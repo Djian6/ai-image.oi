@@ -2,12 +2,19 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI 图像生成器</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         :root {
             --bg-primary: #0a0a0f;
             --bg-secondary: #12121a;
@@ -23,15 +30,9 @@
             --warning: #ffaa00;
             --error: #ff4466;
             --gradient-main: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-            --radius: 16px;
-            --radius-sm: 10px;
+            --radius: 20px;
+            --radius-sm: 12px;
             --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
         }
 
         body {
@@ -48,86 +49,81 @@
             background-image:
                 linear-gradient(var(--border) 1px, transparent 1px),
                 linear-gradient(90deg, var(--border) 1px, transparent 1px);
-            background-size: 60px 60px;
-            opacity: 0.4;
+            background-size: 40px 40px;
+            opacity: 0.3;
             pointer-events: none;
             z-index: 0;
         }
 
         .bg-glow {
             position: fixed;
-            width: 600px;
-            height: 600px;
+            width: 300px;
+            height: 300px;
             border-radius: 50%;
-            filter: blur(150px);
-            opacity: 0.15;
+            filter: blur(120px);
+            opacity: 0.2;
             pointer-events: none;
             z-index: 0;
         }
 
         .bg-glow--1 {
-            top: -200px;
-            right: -100px;
+            top: -100px;
+            right: -50px;
             background: var(--accent);
         }
 
         .bg-glow--2 {
-            bottom: -200px;
-            left: -100px;
+            bottom: -100px;
+            left: -50px;
             background: var(--accent-secondary);
         }
 
         .app {
             position: relative;
             z-index: 1;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 24px 80px;
+            max-width: 100%;
+            padding: 20px 16px 100px;
+            min-height: 100vh;
         }
 
         header {
             text-align: center;
-            margin-bottom: 48px;
+            margin-bottom: 24px;
+            padding-top: 10px;
         }
 
         .logo {
             font-family: 'Orbitron', sans-serif;
-            font-size: 42px;
+            font-size: 28px;
             font-weight: 900;
             background: var(--gradient-main);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            letter-spacing: 4px;
-            margin-bottom: 8px;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
         }
 
         .tagline {
             color: var(--text-secondary);
-            font-size: 15px;
+            font-size: 12px;
             font-weight: 300;
-            letter-spacing: 2px;
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: 420px 1fr;
-            gap: 32px;
-            align-items: start;
+            letter-spacing: 0.5px;
         }
 
         .panel {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 28px;
+            padding: 20px;
             box-shadow: var(--shadow-card);
+            margin-bottom: 16px;
         }
 
         .panel__title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 700;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -136,18 +132,18 @@
         .panel__title::before {
             content: '';
             width: 4px;
-            height: 18px;
+            height: 16px;
             border-radius: 2px;
             background: var(--gradient-main);
         }
 
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 16px;
         }
 
         .form-group label {
             display: block;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
             color: var(--text-secondary);
             margin-bottom: 8px;
@@ -158,8 +154,8 @@
         .form-group input[type="text"],
         .form-group input[type="number"] {
             width: 100%;
-            padding: 12px 14px;
-            border-radius: 8px;
+            padding: 14px 16px;
+            border-radius: var(--radius-sm);
             border: 1px solid var(--border);
             background: var(--bg-secondary);
             color: var(--text-primary);
@@ -170,7 +166,7 @@
         }
 
         .form-group textarea {
-            resize: vertical;
+            resize: none;
             min-height: 100px;
             line-height: 1.6;
         }
@@ -179,132 +175,35 @@
         .form-group select:focus,
         .form-group input:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
+            box-shadow: 0 0 0 4px var(--accent-glow);
         }
 
         .form-group select {
             cursor: pointer;
             appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238888a0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%238888a0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 14px center;
-            padding-right: 36px;
+            background-position: right 16px center;
+            padding-right: 44px;
         }
 
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 12px;
         }
 
         .form-row--triple {
-            grid-template-columns: 1fr 1fr 1.2fr;
-            align-items: end;
-        }
-
-        /* 移动端适配 */
-        @media (max-width: 900px) {
-            .layout {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 600px) {
-            .app {
-                padding: 24px 16px 60px;
-            }
-
-            header {
-                margin-bottom: 32px;
-            }
-
-            .logo {
-                font-size: 32px;
-                letter-spacing: 2px;
-            }
-
-            .tagline {
-                font-size: 13px;
-                letter-spacing: 1px;
-            }
-
-            .panel {
-                padding: 20px 16px;
-                border-radius: 12px;
-            }
-
-            .panel__title {
-                font-size: 15px;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .form-row--triple {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-
-            .bg-grid {
-                background-size: 40px 40px;
-            }
-
-            .bg-glow {
-                width: 400px;
-                height: 400px;
-                filter: blur(100px);
-            }
-
-            /* 移动端按钮优化 */
-            .btn {
-                padding: 16px 20px;
-                font-size: 16px;
-                min-height: 48px;
-            }
-
-            /* 移动端滑块优化 */
-            .slider-group input[type="range"]::-webkit-slider-thumb {
-                width: 28px;
-                height: 28px;
-            }
-
-            /* 移动端历史记录 */
-            .history-grid {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                gap: 10px;
-            }
-
-            /* 移动端结果区域 */
-            .result-area {
-                min-height: 300px;
-            }
-
-            .result-placeholder {
-                min-height: 280px;
-            }
-
-            /* 移动端加载器 */
-            .loader {
-                min-height: 280px;
-            }
-
-            /* 移动端结果操作按钮 */
-            .result-actions {
-                flex-direction: column;
-            }
-
-            .result-actions .btn {
-                width: 100%;
-                padding: 14px;
-                font-size: 14px;
-            }
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
         .slider-group {
             display: flex;
             align-items: center;
             gap: 12px;
+            padding: 8px 4px;
         }
 
         .slider-group input[type="range"] {
@@ -319,33 +218,33 @@
 
         .slider-group input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: var(--accent);
             cursor: pointer;
-            box-shadow: 0 0 8px var(--accent-glow);
+            box-shadow: 0 0 12px var(--accent-glow);
         }
 
         .slider-value {
             font-family: 'Orbitron', sans-serif;
-            font-size: 13px;
+            font-size: 14px;
             color: var(--accent);
-            min-width: 36px;
+            min-width: 40px;
             text-align: right;
         }
 
         .btn {
             width: 100%;
-            padding: 14px 24px;
+            padding: 16px 24px;
             border: none;
             border-radius: var(--radius-sm);
             font-family: inherit;
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 700;
             cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.25s, opacity 0.2s;
-            letter-spacing: 1px;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
         }
 
         .btn:active {
@@ -358,8 +257,10 @@
             box-shadow: 0 4px 20px var(--accent-glow);
         }
 
-        .btn--primary:hover {
-            box-shadow: 0 6px 30px var(--accent-glow);
+        .btn--secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
         }
 
         .btn:disabled {
@@ -367,11 +268,18 @@
             cursor: not-allowed;
         }
 
-        .result-area {
-            min-height: 400px;
+        .button-group {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .result-area {
+            min-height: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         .result-placeholder {
@@ -380,14 +288,15 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 350px;
+            min-height: 280px;
             color: var(--text-secondary);
             text-align: center;
+            padding: 20px;
         }
 
         .result-placeholder__icon {
-            width: 80px;
-            height: 80px;
+            width: 72px;
+            height: 72px;
             border: 2px dashed var(--border);
             border-radius: 50%;
             display: flex;
@@ -403,7 +312,8 @@
         }
 
         .result-placeholder__text {
-            font-size: 14px;
+            font-size: 13px;
+            line-height: 1.6;
         }
 
         .result-image-wrapper {
@@ -422,34 +332,32 @@
 
         .result-actions {
             display: flex;
+            flex-direction: column;
             gap: 10px;
             margin-top: 12px;
         }
 
         .result-actions .btn {
-            width: auto;
-            flex: 1;
-            padding: 12px;
-            font-size: 13px;
-            border-radius: var(--radius-sm);
+            width: 100%;
+            padding: 14px;
+            font-size: 14px;
             background: var(--bg-card);
             border: 1px solid var(--border);
             color: var(--text-primary);
         }
 
-        .result-actions .btn:hover {
+        .result-actions .btn:active {
             background: var(--bg-card-hover);
             border-color: var(--accent);
         }
 
-        /* Loading */
         .loader {
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 350px;
-            gap: 24px;
+            min-height: 280px;
+            gap: 20px;
         }
 
         .loader.active {
@@ -457,8 +365,8 @@
         }
 
         .loader__ring {
-            width: 64px;
-            height: 64px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             border: 3px solid var(--border);
             border-top-color: var(--accent);
@@ -470,14 +378,14 @@
         }
 
         .loader__text {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-secondary);
             text-align: center;
         }
 
         .loader__progress {
             font-family: 'Orbitron', sans-serif;
-            font-size: 20px;
+            font-size: 18px;
             color: var(--accent);
             letter-spacing: 2px;
         }
@@ -486,7 +394,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 14px;
+            padding: 12px 14px;
             border-radius: var(--radius-sm);
             font-size: 13px;
             margin-bottom: 12px;
@@ -524,14 +432,14 @@
         }
 
         .history-section {
-            margin-top: 40px;
+            margin-top: 24px;
         }
 
         .history-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 12px;
-            margin-top: 16px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 12px;
         }
 
         .history-item {
@@ -543,8 +451,8 @@
             aspect-ratio: 1;
         }
 
-        .history-item:hover {
-            transform: scale(1.03);
+        .history-item:active {
+            transform: scale(0.95);
             border-color: var(--accent);
         }
 
@@ -554,8 +462,89 @@
             object-fit: cover;
         }
 
-        .task-id-input {
-            margin-top: 12px;
+        .history-empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 30px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        /* 桌面端优化 */
+        @media (min-width: 768px) {
+            .app {
+                max-width: 1100px;
+                margin: 0 auto;
+                padding: 40px 24px 80px;
+            }
+
+            header {
+                margin-bottom: 40px;
+            }
+
+            .logo {
+                font-size: 42px;
+                letter-spacing: 4px;
+            }
+
+            .tagline {
+                font-size: 15px;
+                letter-spacing: 2px;
+            }
+
+            .layout {
+                display: grid;
+                grid-template-columns: 420px 1fr;
+                gap: 24px;
+                align-items: start;
+            }
+
+            .panel {
+                padding: 28px;
+            }
+
+            .panel__title {
+                font-size: 16px;
+            }
+
+            .form-row--triple {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1.2fr;
+                gap: 10px;
+            }
+
+            .button-group {
+                flex-direction: row;
+            }
+
+            .result-actions {
+                flex-direction: row;
+            }
+
+            .result-area {
+                min-height: 450px;
+            }
+
+            .history-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            }
+
+            .bg-grid {
+                background-size: 60px 60px;
+            }
+
+            .bg-glow {
+                width: 500px;
+                height: 500px;
+                filter: blur(150px);
+            }
+        }
+
+        /* 平板尺寸优化 */
+        @media (min-width: 500px) and (max-width: 767px) {
+            .history-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
     </style>
 </head>
@@ -571,13 +560,12 @@
         </header>
 
         <div class="layout">
-            <!-- Left: Controls -->
             <div class="panel">
                 <div class="panel__title">生成参数</div>
 
                 <div class="form-group">
                     <label>提示词 (Prompt)</label>
-                    <textarea id="prompt" placeholder="描述你想要生成的图像"></textarea>
+                    <textarea id="prompt" placeholder="描述你想要生成的图像，例如：一只可爱的橘猫在花园里玩耍"></textarea>
                 </div>
 
                 <div class="form-row form-row--triple">
@@ -599,22 +587,22 @@
                     </div>
                     <div class="form-group" style="margin-bottom:0">
                         <div class="slider-group">
-                            <input type="range" id="influence" min="0" max="100" value="100" style="height:4px">
+                            <input type="range" id="influence" min="0" max="100" value="100">
                             <span class="slider-value" id="influence-value">100</span>
                         </div>
                     </div>
                 </div>
 
-                <button class="btn btn--primary" id="generate-btn" style="margin-top:14px">
-                    生成图像
-                </button>
-
-                <button class="btn" id="history-toggle-btn" style="margin-top:8px">
-                    生成历史
-                </button>
+                <div class="button-group">
+                    <button class="btn btn--primary" id="generate-btn">
+                        生成图像
+                    </button>
+                    <button class="btn btn--secondary" id="history-toggle-btn">
+                        生成历史
+                    </button>
+                </div>
             </div>
 
-            <!-- Right: Result -->
             <div class="panel result-area">
                 <div id="status-container"></div>
 
@@ -642,13 +630,12 @@
                     <div class="result-actions">
                         <button class="btn" id="download-btn">下载图像</button>
                         <button class="btn" id="new-tab-btn">新标签打开</button>
-                        <button class="btn" id="copy-url-btn">复制图像链接</button>
+                        <button class="btn" id="copy-url-btn">复制链接</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- History -->
         <div class="history-section" id="history-section" style="display: none;">
             <div class="panel">
                 <div class="panel__title">生成历史</div>
@@ -658,18 +645,22 @@
     </div>
 
     <script>
-        // 直接使用 API 地址
         const API_URL = 'https://api.aizdzj.com/draw/text2image.php';
-        const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+        
+        const CORS_PROXIES = [
+            'https://api.allorigins.win/raw?url=',
+            'https://corsproxy.io/?',
+            'https://api.codetabs.com/v1/proxy?quest='
+        ];
+        
+        let currentProxyIndex = 0;
 
-        // Influence slider
         const influenceSlider = document.getElementById('influence');
         const influenceValue = document.getElementById('influence-value');
         influenceSlider.addEventListener('input', () => {
             influenceValue.textContent = influenceSlider.value;
         });
 
-        // Status bar
         function showStatus(message, type = 'info') {
             const container = document.getElementById('status-container');
             container.innerHTML = `
@@ -683,11 +674,11 @@
             document.getElementById('status-container').innerHTML = '';
         }
 
-        // Loader timer
         let timerInterval = null;
         function startTimer() {
             const timerEl = document.getElementById('loader-timer');
             let seconds = 0;
+            timerEl.textContent = '00:00';
             timerInterval = setInterval(() => {
                 seconds++;
                 const m = String(Math.floor(seconds / 60)).padStart(2, '0');
@@ -701,7 +692,34 @@
             timerInterval = null;
         }
 
-        // Generate image
+        async function makeAPIRequest(bodyString) {
+            for (let i = 0; i < CORS_PROXIES.length; i++) {
+                try {
+                    const proxy = CORS_PROXIES[(currentProxyIndex + i) % CORS_PROXIES.length];
+                    const proxyUrl = proxy + encodeURIComponent(API_URL + '?' + bodyString);
+                    console.log(`尝试使用代理 ${i + 1}: ${proxy}`);
+                    
+                    const response = await fetch(proxyUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    if (data && !data.error || data.code !== 403) {
+                        currentProxyIndex = (currentProxyIndex + i) % CORS_PROXIES.length;
+                        return data;
+                    }
+                } catch (e) {
+                    console.log(`代理 ${i + 1} 失败:`, e);
+                    continue;
+                }
+            }
+            
+            throw new Error('所有代理均无法访问，请稍后再试');
+        }
+
         document.getElementById('generate-btn').addEventListener('click', async () => {
             let prompt = document.getElementById('prompt').value.trim();
             if (!prompt) {
@@ -750,49 +768,18 @@
             }
         });
 
-        // 发送 API 请求的辅助函数
-        async function makeAPIRequest(bodyString) {
-            // 尝试直接调用
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                    },
-                    body: bodyString
-                });
-                const data = await response.json();
-                if (!data.error || data.code !== 403) {
-                    return data;
-                }
-            } catch (e) {
-                console.log('直接调用失败，尝试 CORS 代理');
-            }
-
-            // 尝试使用 CORS 代理（GET 方式）
-            try {
-                const proxyUrl = CORS_PROXY + encodeURIComponent(API_URL + '?' + bodyString);
-                const response = await fetch(proxyUrl);
-                return await response.json();
-            } catch (e) {
-                console.log('CORS 代理也失败了');
-                throw new Error('无法连接到 API，请尝试使用本地代理服务器');
-            }
-        }
-
-        // Poll task status
         async function pollTaskStatus(taskId, prompt, maxRetries = 60, interval = 3000) {
             let retries = 0;
 
             const poll = async () => {
                 if (retries >= maxRetries) {
-                    showStatus('生成超时，请手动查询任务 ID: ' + taskId, 'error');
+                    showStatus('生成超时，请稍后再试', 'error');
                     resetUI();
                     return;
                 }
 
                 try {
-                    showStatus(`正在生成中... (第 ${retries + 1} 次查询)`, 'info');
+                    showStatus(`正在生成中... (${retries + 1}/${maxRetries})`, 'info');
 
                     const formData = new URLSearchParams();
                     formData.append('task_id', taskId);
@@ -800,10 +787,23 @@
                     const data = await makeAPIRequest(formData.toString());
                     console.log('Poll Response:', data);
 
-                    const isCompleted = data.task_status === 'COMPLETED' || data.task_status === 'SUCCEEDED' || data.status === 'completed' || data.status === 'success' || (data.data && (data.data.status === 'completed' || data.data.status === 'COMPLETED' || data.data.status === 'SUCCEEDED'));
+                    const isCompleted = data.task_status === 'COMPLETED' || 
+                                       data.task_status === 'SUCCEEDED' || 
+                                       data.status === 'completed' || 
+                                       data.status === 'success' || 
+                                       (data.data && (
+                                           data.data.status === 'completed' || 
+                                           data.data.status === 'COMPLETED' || 
+                                           data.data.status === 'SUCCEEDED'
+                                       ));
 
                     if (isCompleted) {
-                        const imageUrl = data.url || data.image_url || data.data?.image_url || data.result?.data?.[0]?.url || data.data?.result || data.result;
+                        const imageUrl = data.url || 
+                                        data.image_url || 
+                                        data.data?.image_url || 
+                                        data.result?.data?.[0]?.url || 
+                                        data.data?.result || 
+                                        data.result;
                         if (imageUrl) {
                             stopTimer();
                             showImageResult(imageUrl, taskId);
@@ -812,10 +812,12 @@
                         }
                     }
 
-                    const isFailed = data.task_status === 'FAILED' || data.status === 'failed' || data.status === 'error';
+                    const isFailed = data.task_status === 'FAILED' || 
+                                    data.status === 'failed' || 
+                                    data.status === 'error';
 
                     if (isFailed) {
-                        showStatus('生成失败: ' + (data.error || data.message || data.error_details?.join(', ') || JSON.stringify(data)), 'error');
+                        showStatus('生成失败: ' + (data.error || data.message || JSON.stringify(data)), 'error');
                         stopTimer();
                         resetUI();
                         return;
@@ -833,12 +835,11 @@
         }
 
         function showImageResult(imageUrl, taskId) {
-            document.getElementById('loader').classList.add('active');
             document.getElementById('loader').classList.remove('active');
             document.getElementById('result-container').style.display = 'block';
             document.getElementById('result-image').src = imageUrl;
             clearStatus();
-            showStatus('图像生成完成!' + (taskId ? ` (Task ID: ${taskId})` : ''), 'success');
+            showStatus('图像生成完成！', 'success');
             document.getElementById('generate-btn').disabled = false;
         }
 
@@ -849,7 +850,6 @@
             document.getElementById('generate-btn').disabled = false;
         }
 
-        // Download image
         document.getElementById('download-btn').addEventListener('click', () => {
             const imgSrc = document.getElementById('result-image').src;
             if (imgSrc) {
@@ -863,24 +863,24 @@
             }
         });
 
-        // Open in new tab
         document.getElementById('new-tab-btn').addEventListener('click', () => {
             const imgSrc = document.getElementById('result-image').src;
             if (imgSrc) window.open(imgSrc, '_blank');
         });
 
-        // Copy URL
         document.getElementById('copy-url-btn').addEventListener('click', () => {
             const imgSrc = document.getElementById('result-image').src;
             if (imgSrc) {
                 navigator.clipboard.writeText(imgSrc).then(() => {
                     showStatus('链接已复制到剪贴板', 'success');
                     setTimeout(clearStatus, 3000);
+                }).catch(() => {
+                    showStatus('复制失败，请手动复制', 'error');
+                    setTimeout(clearStatus, 3000);
                 });
             }
         });
 
-        // History toggle
         document.getElementById('history-toggle-btn').addEventListener('click', () => {
             const section = document.getElementById('history-section');
             if (section.style.display === 'none' || section.style.display === '') {
@@ -891,24 +891,21 @@
             }
         });
 
-        // History
         let history = JSON.parse(localStorage.getItem('ai-draw-history') || '[]');
 
         function renderHistory() {
-            const section = document.getElementById('history-section');
             const grid = document.getElementById('history-grid');
-
             grid.innerHTML = '';
 
             if (history.length === 0) {
-                grid.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;grid-column:1/-1;text-align:center;padding:20px;">暂无生成记录</div>';
+                grid.innerHTML = '<div class="history-empty">暂无生成记录</div>';
                 return;
             }
 
-            history.slice().reverse().forEach(item => {
+            history.slice().reverse().forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'history-item';
-                div.innerHTML = `<img src="${item.url}" alt="${item.prompt}" title="${item.prompt}">`;
+                div.innerHTML = `<img src="${item.url}" alt="${item.prompt}" title="${item.prompt}" loading="lazy">`;
                 div.addEventListener('click', () => {
                     document.getElementById('placeholder').style.display = 'none';
                     document.getElementById('result-container').style.display = 'block';
@@ -923,7 +920,7 @@
 
         function addToHistory(url, prompt) {
             history.push({ url, prompt, time: Date.now() });
-            if (history.length > 20) history = history.slice(-20);
+            if (history.length > 24) history = history.slice(-24);
             localStorage.setItem('ai-draw-history', JSON.stringify(history));
         }
     </script>
