@@ -122,6 +122,172 @@
             }
         }
 
+        @media (max-width: 768px) {
+            .app {
+                padding: 24px 16px 60px;
+            }
+
+            header {
+                margin-bottom: 32px;
+            }
+
+            .logo {
+                font-size: 32px;
+                letter-spacing: 2px;
+            }
+
+            .panel {
+                padding: 20px;
+            }
+
+            .history-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+
+            .bg-glow {
+                width: 300px;
+                height: 300px;
+                filter: blur(80px);
+            }
+
+            .bg-glow--1 {
+                top: -80px;
+                right: -60px;
+            }
+
+            .bg-glow--2 {
+                bottom: -80px;
+                left: -60px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .app {
+                padding: 16px 12px 40px;
+            }
+
+            header {
+                margin-bottom: 24px;
+            }
+
+            .logo {
+                font-size: 26px;
+                letter-spacing: 1px;
+            }
+
+            .tagline {
+                font-size: 13px;
+            }
+
+            .layout {
+                gap: 20px;
+            }
+
+            .panel {
+                padding: 16px;
+                border-radius: 12px;
+            }
+
+            .panel__title {
+                font-size: 14px;
+                margin-bottom: 16px;
+            }
+
+            .form-row--triple {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .form-group textarea {
+                min-height: 60px;
+                font-size: 16px;
+            }
+
+            .form-group select,
+            .form-group input[type="text"],
+            .form-group input[type="number"] {
+                font-size: 16px;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+
+            .result-area {
+                min-height: 280px;
+            }
+
+            .result-placeholder {
+                min-height: 200px;
+            }
+
+            .result-placeholder__icon {
+                width: 60px;
+                height: 60px;
+            }
+
+            .result-placeholder__icon svg {
+                width: 24px;
+                height: 24px;
+            }
+
+            .result-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .result-actions .btn {
+                width: 100%;
+                padding: 10px;
+            }
+
+            .loader {
+                min-height: 200px;
+            }
+
+            .loader__ring {
+                width: 48px;
+                height: 48px;
+            }
+
+            .history-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 8px;
+            }
+
+            .bg-glow {
+                width: 200px;
+                height: 200px;
+                filter: blur(60px);
+                opacity: 0.1;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .logo {
+                font-size: 22px;
+            }
+
+            .app {
+                padding: 12px 10px 32px;
+            }
+
+            .panel {
+                padding: 12px;
+                border-radius: 10px;
+            }
+
+            .history-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                gap: 6px;
+            }
+        }
+
         .panel {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -565,9 +731,9 @@
     </div>
 
     <script>
-        // 直接使用 API 地址
         const API_URL = 'https://api.aizdzj.com/draw/text2image.php';
         const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+        const LOCAL_PROXY = '/';
 
         // Influence slider
         const influenceSlider = document.getElementById('influence');
@@ -659,7 +825,28 @@
 
         // 发送 API 请求的辅助函数
         async function makeAPIRequest(bodyString) {
-            // 尝试直接调用
+            let lastError;
+
+            // 方式 1: 通过本地代理服务器转发（推荐，运行 proxy.js 即可）
+            try {
+                const response = await fetch(LOCAL_PROXY, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    },
+                    body: bodyString
+                });
+                const data = await response.json();
+                if (response.ok && !data.error) {
+                    return data;
+                }
+                lastError = data.error || response.statusText;
+            } catch (e) {
+                lastError = e.message;
+                console.log('本地代理不可用:', e.message);
+            }
+
+            // 方式 2: 直接调用远程 API
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
@@ -672,19 +859,27 @@
                 if (!data.error || data.code !== 403) {
                     return data;
                 }
+                lastError = data.error || response.statusText;
             } catch (e) {
-                console.log('直接调用失败，尝试 CORS 代理');
+                lastError = e.message;
+                console.log('直接调用失败:', e.message);
             }
 
-            // 尝试使用 CORS 代理（GET 方式）
+            // 方式 3: 通过外部 CORS 代理
             try {
                 const proxyUrl = CORS_PROXY + encodeURIComponent(API_URL + '?' + bodyString);
                 const response = await fetch(proxyUrl);
-                return await response.json();
+                const data = await response.json();
+                if (!data.error) {
+                    return data;
+                }
+                lastError = data.error || response.statusText;
             } catch (e) {
-                console.log('CORS 代理也失败了');
-                throw new Error('无法连接到 API，请尝试使用本地代理服务器');
+                lastError = e.message;
+                console.log('CORS 代理也失败了:', e.message);
             }
+
+            throw new Error('无法连接到图像生成服务。请尝试运行本地代理：node proxy.js (原因: ' + lastError + ')');
         }
 
         // Poll task status
